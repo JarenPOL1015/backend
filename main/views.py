@@ -7,6 +7,11 @@ import json
 # Create your views here.
 from django.http import HttpResponse
 
+# Importe el decorador login_required
+from django.contrib.auth.decorators import login_required
+
+# Restricción de acceso con @login_required
+@login_required
 def index(request):
     # Arme el endpoint del REST API
     current_url = request.build_absolute_uri()
