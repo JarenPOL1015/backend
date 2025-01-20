@@ -29,13 +29,25 @@ def index(request):
     total_responses = len(response_dict.keys())
 
     # Valores de la respuesta
-    responses = response_dict.values()
-    
+    responses = list(response_dict.values())  # Convertir a lista para ordenar
+
+    # Manejo de fechas
+    if responses:  # Verificar que hay respuestas
+        # Ordenar por la fecha 'saved'
+        responses.sort(key=lambda x: x.get('saved'))
+        first_response_date = responses[0].get('saved', 'N/A')  # Fecha de la primera respuesta
+        last_response_date = responses[-1].get('saved', 'N/A')  # Fecha de la última respuesta
+    else:
+        first_response_date = 'N/A'
+        last_response_date = 'N/A'
+
     # Objeto con los datos a renderizar
     data = {
         'title': 'Landing - Dashboard',
         'total_responses': total_responses,
-        'responses': responses
+        'responses': responses,
+        'first_response_date': first_response_date,
+        'last_response_date': last_response_date,
     }
 
     # Renderización en la plantilla
