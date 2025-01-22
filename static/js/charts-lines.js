@@ -4,27 +4,19 @@
 const lineConfig = {
   type: 'line',
   data: {
-    labels: ["January", "February", "March", "April", "May", "June", "July"],
+    labels: ["Domingo","Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
     datasets: [
       {
-        label: 'content',
-        /**
-         * These colors come from Tailwind CSS palette
-         * https://tailwindcss.com/docs/customizing-colors/#default-color-palette
-         */
+        label: 'Comentarios',
         backgroundColor: '#0694a2',
         borderColor: '#0694a2',
-        data: [43, 48, 40, 54, 67, 73, 70],
+        data: [],
         fill: false,
       },
     ],
   },
   options: {
     responsive: true,
-    /**
-     * Default legends are ugly and impossible to style.
-     * See examples in charts.html to add your own legends
-     *  */
     legend: {
       display: false,
     },
@@ -41,69 +33,107 @@ const lineConfig = {
         display: true,
         scaleLabel: {
           display: true,
-          labelString: 'Day',
+          labelString: 'Día',
         },
       },
       y: {
         display: true,
         scaleLabel: {
           display: true,
-          labelString: 'Value',
+          labelString: 'Cantidad',
         },
       },
     },
   },
-}
+};
 
-// change this to the id of your chart element in HMTL
-const lineCtx = document.getElementById('line')
-window.myLine = new Chart(lineCtx, lineConfig)
+// Change this to the id of your chart element in HTML
+const lineCtx = document.getElementById('line');
+window.myLine = new Chart(lineCtx, lineConfig);
 
-countCommentsByDay = (data) => {
+const parseDate = (dateString) => {
+  try {
+    // Normalizar espacios y reemplazar AM/PM
+    const cleanedDate = dateString
+      .replace(/[\u00A0\s]+/g, ' ') // Reemplaza espacios invisibles por espacios normales
+      .replace('a. m.', 'AM')
+      .replace('p. m.', 'PM');
 
-  // Inicializar contadores por rango de horas
-  const labels = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
-  const counts = [0, 0, 0, 0, 0, 0, 0];
+    // Separar partes de fecha y hora
+    const [datePart, timePart] = cleanedDate.split(',').map((part) => part.trim());
+    if (!datePart || !timePart) {
+      console.error('Formato de fecha no válido:', dateString);
+      return null;
+    }
 
-  Object.values(data).forEach(record => {
+    // Extraer día, mes y año
+    const [day, month, year] = datePart.split('/');
+    if (!day || !month || !year) {
+      console.error('Formato de fecha no válido:', datePart);
+      return null;
+    }
+
+    // Convertir tiempo AM/PM a 24 horas
+    const [time, period] = timePart.split(' ');
+    const [hours, minutes, seconds] = time.split(':').map(Number);
+    let formattedHours = hours;
+
+    if (period === 'PM' && hours < 12) {
+      formattedHours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      formattedHours = 0;
+    }
+
+    const formattedTime = `${String(formattedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    // Crear string ISO 8601
+    const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${formattedTime}`;
+    const date = new Date(isoString);
+
+    if (isNaN(date.getTime())) {
+      console.error('Fecha inválida creada:', isoString);
+      return null;
+    }
+
+    return date;
+  } catch (error) {
+    console.error('Error al parsear la fecha:', dateString, error);
+    return null;
+  }
+};
+
+
+const countCommentsByDay = (data) => {
+  const labels = ["Domingo","Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const counts = Array(7).fill(0);
+
+  Object.values(data).forEach((record) => {
     const savedDate = record.saved;
     if (!savedDate) return;
 
-    const date = new Date(savedDate);
-    if(date.getDay() == 1){
-      counts[0]++;
-    }else if(date.getDay() == 2){
-      counts[1]++;
-    }else if(date.getDay() == 3){
-      counts[2]++;
-    }else if(date.getDay() == 4){
-      counts[3]++;
-    }else if(date.getDay() == 5){
-      counts[4]++;
-    }else if(date.getDay() == 6){
-      counts[5]++;
-    }else{
-      counts[6]++;
-    }
+    const date = parseDate(savedDate);
+    if (!date) return;
+
+    const dayIndex = (date.getDay() + 6) % 7;
+    counts[dayIndex]++;
   });
 
   return { labels, counts };
-}
+};
 
-updateLineChart = () => {
+const updateLineChart = () => {
   fetch('/api/v1/landing')
-      .then(response => response.json())
-      .then(data => {
-          const { labels, counts } = countCommentsByDay(data);
+    .then((response) => response.json())
+    .then((data) => {
+      const { labels, counts } = countCommentsByDay(data);
 
-          // Actualizar el gráfico
-          window.myLine.data.labels = labels;
-          window.myLine.data.datasets[0].data = counts;
-          window.myLine.update();
-      })
-      .catch(error => console.error('Error:', error));
+      // Actualizar datos del gráfico
+      window.myLine.data.labels = labels;
+      window.myLine.data.datasets[0].data = counts;
+
+      window.myLine.update();
+    })
+    .catch((error) => console.error('Error al actualizar el gráfico:', error));
 };
 
 updateLineChart();
-
-
