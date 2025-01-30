@@ -16,16 +16,16 @@ from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Coloque la ruta relativa al archivo con la clave privada
-FIREBASE_CRED = credentials.Certificate("keys/landing-key.json")
+FIREBASE_CRED = credentials.Certificate(BASE_DIR / "keys/landing-key.json")
 
 # Inicialice la conexión con el Realtime Database con la clave privada y la URL de referencia
 firebase_admin.initialize_app(FIREBASE_CRED, {
     'databaseURL': 'https://bd-dawm-3210b-default-rtdb.firebaseio.com/'
 })
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
