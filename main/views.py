@@ -10,26 +10,28 @@ from django.http import HttpResponse
 # Importe el decorador login_required
 from django.contrib.auth.decorators import login_required, permission_required
 
+from api.views import LandingAPI
+from rest_framework.request import Request
+
 # Restricción de acceso con @login_required y permisos con @permission_required
 @login_required
 @permission_required('main.index_viewer', raise_exception=True)
 def index(request):
-    # Arme el endpoint del REST API
-    current_url = request.build_absolute_uri()
-    url = current_url + '/api/v1/landing'
+    
+    # Crear un objeto Request de DRF basado en el request original
+    drf_request = Request(request)
 
-    # Petición al REST API
-    response_http = requests.get(url)
-    response_dict = json.loads(response_http.content)
+    # Llamar directamente al método GET de LandingAPI
+    response = LandingAPI().get(drf_request)
 
-    print("Endpoint ", url)
-    print("Response ", response_dict)
+    # Extraer los datos JSON directamente
+    response_dict = response.data
 
     # Respuestas totales
-    total_responses = len(response_dict.keys())
+    total_responses = len(response_dict.keys()) if response_dict else 0
 
-    # Valores de la respuesta
-    responses = list(response_dict.values())  # Convertir a lista para ordenar
+    # Manejo de fechas
+    responses = list(response_dict.values()) if response_dict else []
 
     # Manejo de fechas
     if responses:  # Verificar que hay respuestas
